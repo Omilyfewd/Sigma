@@ -3,12 +3,10 @@ import requests
 import time
 
 DATABASE_NAME = "bazaar_history.db"
-
-
 def initialize_db():
     with sqlite3.connect(DATABASE_NAME) as conn:
         conn.execute("""
-                     CREATE TABLE IF NOT EXISTS bazaar_updates
+                     CREATE TABLE IF NOT EXISTS bazaar_updates_with_index
                      (
                          update_id INTEGER PRIMARY KEY AUTOINCREMENT,
                          timestamp INTEGER,
@@ -19,6 +17,8 @@ def initialize_db():
                          sell_volume INTEGER
                      )
                      """)
+        conn.execute("""CREATE INDEX IF NOT EXISTS idx_product_time 
+            ON bazaar_updates (product_id, timestamp)""")
 
 
 def fetch_and_store():
@@ -30,11 +30,7 @@ def fetch_and_store():
     data = response.json()
     last_updated = data['lastUpdated']
 
-
-    # PM NOTE: You could add a check here to see if last_updated
-    # matches the last entry in your DB to skip redundant writes.
-
-
+    #Add here matches to time entries to prevent writing data if no time has passed
 
     rows_to_insert = []
     for product_id, info in data['products'].items():
@@ -48,7 +44,6 @@ def fetch_and_store():
             status['sellVolume']
         ))
 
-    # Efficient Bulk Insert
     with sqlite3.connect(DATABASE_NAME) as conn:
         conn.executemany("""
                          INSERT INTO bazaar_updates
@@ -63,4 +58,7 @@ if __name__ == "__main__":
     initialize_db()
     while True:
         fetch_and_store()
-        time.sleep(60)
+        time.sleep(60) # data stored in bazaar updates:
+        #23:45 - 00:38 from 1/05/26
+
+
