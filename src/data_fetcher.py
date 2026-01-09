@@ -12,6 +12,4 @@ def fetch_data():
     return data, last_updated
 
 
-# Current data stored in bazaar updates: 23:45 - 00:38 from 1/05/26
-
 

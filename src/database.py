@@ -2,7 +2,7 @@ import sqlite3
 
 
 class DatabaseManager:
-    def __init__(self, db_path="bazaar.db"):
+    def __init__(self, db_path="../data/bazaar.db"):
         self.db_path = db_path
         self.con = sqlite3.connect(self.db_path)
         self.cur = self.con.cursor()
@@ -25,7 +25,7 @@ class DatabaseManager:
 
         self.cur.execute("CREATE INDEX IF NOT EXISTS idx_product_time ON bazaar_updates (product_id, timestamp)")
 
-    def insert_batch(self, products_dict, lastUpdateTime):
+    def insert_batch(self, products_dict, last_update_time=None):
         data_to_insert = []
 
         for p_id, info in products_dict.items():
@@ -36,7 +36,7 @@ class DatabaseManager:
                 status.get('sellPrice'),
                 status.get('buyVolume'),
                 status.get('sellVolume'),
-                lastUpdateTime
+                last_update_time
             ))
 
         query = "INSERT INTO bazaar_updates (product_id, buy_price, sell_price, buy_volume, sell_volume, timestamp) VALUES (?, ?, ?, ?, ?, ?)"
