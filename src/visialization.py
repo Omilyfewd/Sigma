@@ -1,7 +1,7 @@
 import sqlite3
 import pandas as pd
 import matplotlib.pyplot as plt
-from data_eda import get_product_data, get_all_data
+from data_eda import get_product_data, get_all_data, get_info
 
 
 def price_trend(product_id):
@@ -36,10 +36,10 @@ def spread(product_id):
 
     plt.figure(figsize=(10, 5))
 
-    df = df[(df['net_spread'] > -10000) & (df['net_spread'] < 100000)]
+    #df = df[(df['net_spread'] > -10000) & (df['net_spread'] < 100000)]
 
-    plt.ticklabel_format(style='plain', axis='x') #NOTE
-    plt.hist(df['net_spread'].dropna(), bins=300, color='skyblue', edgecolor='black')
+    #plt.ticklabel_format(style='plain', axis='x') #NOTE
+    plt.hist(df['net_spread'].dropna(), bins=30, color='skyblue', edgecolor='black')
 
     # Add a vertical line for the mean
     plt.axvline(df['net_spread'].mean(), color='red', linestyle='dashed', linewidth=1, label='Mean Spread')
@@ -50,6 +50,25 @@ def spread(product_id):
     plt.legend()
     plt.show()
 
+def scatter(product_id):
+    df = get_product_data(product_id)
 
-spread("ENCHANTED_GOLD")
+    df.plot.scatter(x='buy_volume', y='buy_price')  # Use c for color mapping
+    plt.show()
 
+def rolling_volatility(product_id):
+    df = get_product_data(product_id)
+
+    df['moving_std_hour'] = df['buy_price'].rolling(window=60).std()
+    if get_info(product_id).iloc[0, 0] < 1440:
+        mu = df['buy_price'].mean()
+    else:
+        mu = df['buy_price'].rolling(window=1440).mean()
+    df['z_score'] = (df['buy_price'] - mu) / df['moving_std_hour']
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(df.index, df['z_score'], label='Buy Price z score')
+    plt.show()
+
+# scatter("ENCHANTED_GOLD")
+rolling_volatility("ENCHANTED_GOLD")
