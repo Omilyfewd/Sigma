@@ -7,7 +7,7 @@ def get_product_data(product_id):
     df = pd.read_sql_query(query, con, params=(product_id,))
     con.close()
 
-    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+    # df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
     df.set_index('timestamp', inplace=True)
     return df
 
@@ -32,6 +32,6 @@ def get_info(df, window=0):
     return summary
 
 pd.set_option('display.max_rows', None)
-pd.set_option('display.float_format', lambda x: '%.10f' % x)
-print(get_product_data("ENCHANTED_GOLD")[['buy_moving_week', 'sell_moving_week']])
+pd.set_option('display.max_columns', None)
+print(get_product_data("BOOSTER_COOKIE")[['buy_price', 'sell_price', 'buy_moving_week', 'sell_moving_week']])
 
