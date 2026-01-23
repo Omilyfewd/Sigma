@@ -31,7 +31,7 @@ def get_info(df, window=0):
     print(summary)
     return summary
 
-pd.set_option('display.max_rows', None)
-pd.set_option('display.max_columns', None)
-print(get_product_data("BOOSTER_COOKIE")[['buy_price', 'sell_price', 'buy_moving_week', 'sell_moving_week']])
+# pd.set_option('display.max_rows', None)
+# pd.set_option('display.max_columns', None)
+# print(get_product_data("BOOSTER_COOKIE")[['buy_price', 'sell_price', 'buy_moving_week', 'sell_moving_week']])
 
