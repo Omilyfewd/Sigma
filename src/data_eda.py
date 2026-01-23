@@ -17,7 +17,7 @@ def get_all_data():
     df = pd.read_sql_query(query, con)
     con.close()
 
-    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+    # df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
     df.set_index('timestamp', inplace=True)
     return df
 
