@@ -47,7 +47,7 @@ def profit_per_hour(df, window=60):
 
 # print(profit_per_hour(get_product_data("AUTO_SMELTER")))
 
-def calculate_market_velocity(df):
+def volume_derivative(df):
     df = df.sort_values(['product_id', 'timestamp'])
 
     df['buy_delta'] = df.groupby('product_id')['buy_moving_week'].diff()
@@ -58,40 +58,75 @@ def calculate_market_velocity(df):
 
     df[['buy_delta', 'sell_delta']] = df[['buy_delta', 'sell_delta']].fillna(0)
 
-    print(df)
-
     return df
 
+def calculate_market_velocity(full_df, window_minutes=60) -> pd.DataFrame:
+    processed_df = volume_derivative(full_df)
 
-calculate_market_velocity(get_all_data())
-
-
-def get_top_flips(full_df, window_minutes=60):
-    processed_df = calculate_market_velocity(full_df)
-
-    # Filter for only the recent 'window' of data
     latest_time = processed_df['timestamp'].max()
-    window_start = latest_time - (window_minutes * 60000)
+    window_start = latest_time - ((window_minutes + 0.1) * 60000)
     recent_df = processed_df[processed_df['timestamp'] >= window_start]
 
-    print(recent_df)
-
-    # Aggregate velocity per item
     velocity = recent_df.groupby('product_id').agg(
         total_buy=('buy_delta', 'sum'),
         total_sell=('sell_delta', 'sum'),
         duration_hrs=('timestamp', lambda x: (x.max() - x.min()) / 3600000)
     )
 
-    # Calculate Velocity (Trades per Hour)
     velocity['hourly_vol'] = np.minimum(velocity['total_buy'], velocity['total_sell']) / velocity['duration_hrs']
 
-    print(velocity['hourly_vol'])
-    # Merge with latest prices and calculate profit
-    # [Your existing top_flips logic here]
     return velocity
 
-get_top_flips(get_all_data())
+# calculate_market_velocity(get_all_data())
+
+
+def get_top_flips(velo_df, full_df, top_n=10):
+    latest_prices = full_df.sort_values('timestamp').drop_duplicates('product_id', keep='last')
+    latest_prices = latest_prices[['product_id', 'buy_price', 'sell_price']]
+
+    merged = velo_df.merge(latest_prices, left_index=True, right_on='product_id')
+
+    tax_rate = 0.9875
+    merged['margin'] = (merged['buy_price'] * (tax_rate)) - merged['sell_price']
+
+    merged['projected_pph'] = merged['margin'] * merged['hourly_vol']
+    valid_flips = merged[
+        (merged['margin'] > 0) &
+        (merged['hourly_vol'] > 10)  # Adjust here
+        ]
+
+    top_flips = valid_flips.sort_values('projected_pph', ascending=False).head(top_n)
+
+    # pd.set_option('display.max_columns', 50)
+    #
+    # print(latest_prices.head(5))
+    # print(merged.head(5))
+    # print(valid_flips.head(5))
+    # print(top_flips.head(5))
+    # print(top_flips.columns)
+
+    pd.set_option('display.float_format', '{:,.0f}'.format)
+    print(top_flips[["product_id", "buy_price", "sell_price", "margin", "hourly_vol", "projected_pph"]])
+
+    return top_flips
+
+get_top_flips(calculate_market_velocity(get_all_data()), get_all_data())
+
+#calculate sharpe ratios for each flip using all data/data over last 12h(or all data if less than 12)
+#calculate sharpes for all items, stability in margins
+#merge top flips and sharpes df
+#decide how to determine best flips, as sharpes and pph are different metrics relative, and cannot be compared directly.
+#method 1: find top 10% of sharpes and return top flips from that list
+#method 2: return highest sharpe * pph values, rebalanced to some metric.
+
+
+
+
+
+
+
+
+
 # def top_flips():
 #     df = get_all_data()
 #     tax_rate = 0.98875
@@ -107,26 +142,18 @@ get_top_flips(get_all_data())
 #     return top_10
 
 # def top_flips():
-#     # Get current snapshots
 #     df = get_all_data()
 #
 #     latest = df.sort_values('timestamp').groupby('product_id').tail(1).copy()
 #
-#     # Get velocities
 #     velocities = get_market_velocity(window_minutes=60)
-#
-#     # Merge velocity onto latest prices
-#     # This is like a SQL JOIN on product_id
 #     df = latest.join(velocities, on='product_id')
 #
-#     # Apply Tax (1.125% total = 0.98875)
 #     tax_rate = 0.98875
 #     df['profit_per_unit'] = (df['buy_price'] * tax_rate) - df['sell_price']
 #
-#     # Calculate Final Metric
 #     df['potential_profit_hr'] = df['profit_per_unit'] * df['hourly_velocity']
 #
-#     # Filter for realistic items (e.g., must have at least 10 trades per hour)
 #     filtered = df[
 #         (df['profit_per_unit'] > 0) &
 #         (df['hourly_velocity'] > 10)

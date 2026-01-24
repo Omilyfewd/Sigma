@@ -8,7 +8,7 @@ def get_product_data(product_id):
     con.close()
 
     # df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-    df.set_index('timestamp', inplace=True)
+    # df.set_index('timestamp', inplace=True, drop=False)
     return df
 
 def get_all_data():
@@ -18,7 +18,7 @@ def get_all_data():
     con.close()
 
     # df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-    df.set_index('timestamp', inplace=True)
+    # df.set_index('timestamp', inplace=True, drop=False)
     return df
 
 def get_info(df, window=0):
@@ -31,6 +31,8 @@ def get_info(df, window=0):
     print(summary)
     return summary
 
+
+# get_info(get_product_data("ENCHANTED_GOLD"))
 # pd.set_option('display.max_rows', None)
 # pd.set_option('display.max_columns', None)
 # print(get_product_data("BOOSTER_COOKIE")[['buy_price', 'sell_price', 'buy_moving_week', 'sell_moving_week']])

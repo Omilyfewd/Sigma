@@ -22,6 +22,9 @@ def price_trend(df, product_id):
 
     plt.show()
 
+
+price_trend(get_product_data("ENCHANTED_GOLD"), "ENCHANTED_GOLD")
+
 def spread(df):
     tax_rate = 0.9875
     df['net_spread'] = (df['buy_price'] * tax_rate) - df['sell_price']
