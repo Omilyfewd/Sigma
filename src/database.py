@@ -25,7 +25,7 @@ class DatabaseManager:
                      )
                      """)
 
-        self.cur.execute("CREATE INDEX IF NOT EXISTS idx_product_time ON bazaar_updates_2 (product_id, timestamp)")
+        self.cur.execute("CREATE INDEX IF NOT EXISTS idx_product_time ON bazaar_updates_2 (timestamp, product_id)")
 
     def insert_batch(self, products_dict, last_update_time=None):
         data_to_insert = []

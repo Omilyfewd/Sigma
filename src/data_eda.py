@@ -4,8 +4,11 @@ import pandas as pd
 def get_product_data(product_id):
     con = sqlite3.connect('../data/bazaar.db')
     query = "SELECT * FROM bazaar_updates_2 WHERE product_id = ? ORDER BY timestamp ASC"
-    df = pd.read_sql_query(query, con, params=(product_id,))
-    con.close()
+
+    try:
+        df = pd.read_sql_query(query, con, params=(product_id,))
+    finally:
+        con.close()
 
     # df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
     # df.set_index('timestamp', inplace=True, drop=False)
@@ -14,15 +17,40 @@ def get_product_data(product_id):
 def get_all_data():
     con = sqlite3.connect('../data/bazaar.db')
     query = "SELECT * FROM bazaar_updates_2 ORDER BY timestamp ASC"
-    df = pd.read_sql_query(query, con)
-    con.close()
+
+    try:
+        df = pd.read_sql_query(query, con)
+    finally:
+        con.close()
 
     # df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
     # df.set_index('timestamp', inplace=True, drop=False)
     return df
 
+
+def get_recent_data(window_minutes=60):
+    con = sqlite3.connect('../data/bazaar.db')
+
+    buffer_minutes = 5
+    ms_to_look_back = (window_minutes + buffer_minutes) * 60 * 1000
+
+    query = """
+            SELECT * \
+            FROM bazaar_updates_2
+            WHERE timestamp >= (SELECT MAX(timestamp) \
+                                FROM bazaar_updates_2) - ?
+            ORDER BY product_id, timestamp
+            """
+
+    try:
+        df = pd.read_sql_query(query, con, params=(ms_to_look_back,))
+    finally:
+        con.close()
+
+    return df
+
 def get_info(df, window=0):
-    assert window >= 0, "bruh"
+    assert window < 0, "bruh"
     if window:
         df = df.rolling(window)
 

@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from data_eda import get_product_data, get_info, get_all_data
+from data_eda import get_product_data, get_info, get_all_data, get_recent_data
 
 
 def calculate_rolling_sharpe(df, window=30):
@@ -110,7 +110,8 @@ def get_top_flips(velo_df, full_df, top_n=10):
 
     return top_flips
 
-get_top_flips(calculate_market_velocity(get_all_data()), get_all_data())
+data = get_recent_data()
+get_top_flips(calculate_market_velocity(data), data)
 
 #calculate sharpe ratios for each flip using all data/data over last 12h(or all data if less than 12)
 #calculate sharpes for all items, stability in margins
