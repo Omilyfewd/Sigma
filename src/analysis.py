@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 
-from data_eda import get_all_data, get_recent_data
+from data_eda import get_all_data, get_recent_data, get_product_data
 
 
 def calculate_rolling_sharpe(df, window=30):
@@ -47,7 +47,7 @@ def profit_per_hour(df, window=60):
     profit = trades_per_hour(df, window) * margin
     return profit
 
-# print(profit_per_hour(get_product_data("AUTO_SMELTER")))
+print(profit_per_hour(get_product_data("RECOMBOBULATOR_3000")))
 
 def volume_derivative(df):
     # df = df.sort_values(['product_id', 'timestamp'])
@@ -120,7 +120,7 @@ def get_top_flips(velo_df, df, top_n=10):
 
 
 def margin_sharpe(recent): #needs full df(12+ hour)
-    tax_rate = 0.98875
+    tax_rate = 0.9875
 
     recent['net_margin'] = (recent['buy_price'] * tax_rate) - recent['sell_price']
 
@@ -146,7 +146,7 @@ def risk_adjusted_pph_log(df): #takes merged data
 
     pd.set_option('display.max_columns', None)
 
-    # df = df[df['product_id'] = ""]
+    df = df[df['product_id'] == "RECOMBOBULATOR_3000"]
     print(df[['product_id', 'buy_price', 'sell_price', 'margin', 'mean', 'std', 'hourly_vol', 'projected_pph', 'margin_sharpe', 'logged_sharpes', 'risk_adjusted_pph']].sort_values(by='projected_pph', ascending=False))
 
 
@@ -184,7 +184,7 @@ def filtering(df, cap):
     return df.sort_values('alpha_score', ascending=False)
 
 risk_adjusted_pph_log(merged_data())
-filtering(merged_data(), 5)
+# filtering(merged_data(), 5)
 
 
 

@@ -11,7 +11,8 @@ def run_pipeline():
         time.sleep(sleep_time)
 
         try:
-            data, timestamp = fetch_data()[0], fetch_data()[1]
+            result = fetch_data()
+            data, timestamp = result
             if data and data.get('success'):
                 db.insert_batch(data['products'], timestamp)
                 print(f"[{time.ctime()}] Successfully logged {len(data['products'])} items.")
