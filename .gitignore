@@ -38,5 +38,6 @@ __pycache__/
 # Local Data
 data/*.json
 
-# Current Working DataBase
-bazaar_history.db
+# Current Working DataBase(s)
+bazaar.db
+data/*.db

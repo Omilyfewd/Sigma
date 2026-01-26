@@ -5,8 +5,8 @@ import streamlit as st
 from analysis import merged_data, filtering
 from data_eda import get_recent_data
 
-st.set_page_config(page_title="Lawrence Shi's very skibidi sigma bazaar tool", layout="wide")
-st.title("📈 Quantitative Trading and Market Analysis Tool")
+st.set_page_config(page_title="Lawrence is a Skibidi Sigma", layout="wide")
+st.title("📈 Lawrence Shi Quantitative Trading and Market Analysis Tool")
 
 @st.cache_data(ttl=60)
 def load_processed_data():
