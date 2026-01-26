@@ -1,24 +1,24 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 from analysis import merged_data, filtering
 from data_eda import get_recent_data
+import plotly.graph_objects as go
 
-st.set_page_config(page_title="Sigma Bazaar Quant", layout="wide")
-st.title("📈 Quantitative trading and market analysis tool")
+st.set_page_config(page_title="Lawrence Shi's very skibidi sigma bazaar tool", layout="wide")
+st.title("📈 Quantitative Trading and Market Analysis Tool")
 
 @st.cache_data(ttl=60)
 def load_processed_data():
     raw_merged = merged_data(window_hours=12)
     return filtering(raw_merged, cap=5)
 
-df = load_processed_data()
+df = load_processed_data() #lag spike on load data
 
 st.sidebar.header("Navigation")
-page = st.sidebar.radio("Go to", ["Market Leaderboard", "Item Drill-down"])
+page = st.sidebar.radio("Go to", ["Market Leaderboard 🔥", "Item \'Drill-down\' Details 🐱"])
 
-if page == "Market Leaderboard":
-    st.subheader("Top Risk-Adjusted Flips (Alpha Score)")
+if page == "Market Leaderboard 🔥":
+    st.subheader("Top Risk-Adjusted Flips (Using my Alpha Score)")
     st.write("Ranked by a 70/30 split of Projected PPH and Normalized Sharpe Ratio.")
 
     top_df = df[['product_id', 'alpha_score', 'projected_pph', 'margin_sharpe', 'buy_price', 'sell_price']].head(10)
@@ -49,16 +49,47 @@ else:
         st.write(
             f"**Current Buy:** {item_data['buy_price']:,.1f} | **Current Sell:** {item_data['sell_price']:,.1f} | **Margin (Post-Tax):** {item_data['margin']:,.1f}")
 
-        st.write("### Last 60 Minutes Price History")
-        # Fetch raw recent data for the chart
+        st.write("### Swag Price History chart (Last 60m) using Plotly")
+
         history_df = get_recent_data(window_minutes=60)
-        item_history = history_df[history_df['product_id'] == selected_item].sort_values('timestamp')
+        item_history = history_df[history_df['product_id'] == selected_item].copy()
 
         if not item_history.empty:
-            chart_data = item_history.set_index('timestamp')[['buy_price', 'sell_price']]
-            st.line_chart(chart_data)
+            item_history['timestamp'] = pd.to_datetime(item_history['timestamp'], unit='ms')
+            item_history = item_history.sort_values('timestamp')
+
+            fig = go.Figure()
+
+            fig.add_trace(go.Scatter(
+                x=item_history['timestamp'],
+                y=item_history['buy_price'],
+                mode='lines+markers',
+                name='Buy Price',
+                line=dict(color='#00ff00') #green
+            ))
+
+            fig.add_trace(go.Scatter(
+                x=item_history['timestamp'],
+                y=item_history['sell_price'],
+                mode='lines',
+                name='Sell Price',
+                line=dict(color='#ff0000', dash='dash') #red
+            ))
+
+            fig.update_layout(
+                template="plotly_dark",
+                xaxis_title="Time",
+                yaxis_title="Coins",
+                margin=dict(l=20, r=20, t=20, b=20),
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                hovermode="x unified"
+            )
+
+            st.plotly_chart(fig, use_container_width=True)
         else:
-            st.warning("Not enough historical data in the DB for a chart yet.")
+            st.warning("Not enough data yet...")
 
 st.sidebar.markdown("---")
 st.sidebar.write(f"Last API Sync: {pd.to_datetime('now').strftime('%H:%M:%S')}")
+
+# Credit: https://www.kdnuggets.com/how-to-combine-streamlit-pandas-and-plotly-for-interactive-data-apps
