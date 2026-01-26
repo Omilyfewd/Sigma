@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
-from data_eda import get_product_data, get_info, get_all_data, get_recent_data
+from matplotlib import pyplot as plt
+
+from data_eda import get_all_data, get_recent_data
 
 
 def calculate_rolling_sharpe(df, window=30):
@@ -48,7 +50,7 @@ def profit_per_hour(df, window=60):
 # print(profit_per_hour(get_product_data("AUTO_SMELTER")))
 
 def volume_derivative(df):
-    df = df.sort_values(['product_id', 'timestamp'])
+    # df = df.sort_values(['product_id', 'timestamp'])
 
     df['buy_delta'] = df.groupby('product_id')['buy_moving_week'].diff()
     df['sell_delta'] = df.groupby('product_id')['sell_moving_week'].diff()
@@ -60,8 +62,8 @@ def volume_derivative(df):
 
     return df
 
-def calculate_market_velocity(full_df, window_minutes=60) -> pd.DataFrame:
-    processed_df = volume_derivative(full_df)
+def calculate_market_velocity(df, window_minutes=60) -> pd.DataFrame:
+    processed_df = volume_derivative(df)
 
     latest_time = processed_df['timestamp'].max()
     window_start = latest_time - ((window_minutes + 0.1) * 60000)
@@ -80,14 +82,14 @@ def calculate_market_velocity(full_df, window_minutes=60) -> pd.DataFrame:
 # calculate_market_velocity(get_all_data())
 
 
-def get_top_flips(velo_df, full_df, top_n=10):
-    latest_prices = full_df.sort_values('timestamp').drop_duplicates('product_id', keep='last')
+def get_top_flips(velo_df, df, top_n=10):
+    latest_prices = df.drop_duplicates('product_id', keep='last')
     latest_prices = latest_prices[['product_id', 'buy_price', 'sell_price']]
 
     merged = velo_df.merge(latest_prices, left_index=True, right_on='product_id')
 
     tax_rate = 0.9875
-    merged['margin'] = (merged['buy_price'] * (tax_rate)) - merged['sell_price']
+    merged['margin'] = (merged['buy_price'] * tax_rate) - merged['sell_price']
 
     merged['projected_pph'] = merged['margin'] * merged['hourly_vol']
     valid_flips = merged[
@@ -97,21 +99,17 @@ def get_top_flips(velo_df, full_df, top_n=10):
 
     top_flips = valid_flips.sort_values('projected_pph', ascending=False).head(top_n)
 
-    # pd.set_option('display.max_columns', 50)
-    #
-    # print(latest_prices.head(5))
-    # print(merged.head(5))
-    # print(valid_flips.head(5))
-    # print(top_flips.head(5))
-    # print(top_flips.columns)
+    pd.set_option('display.float_format', '{:,.6f}'.format)
+    pd.set_option('display.max_columns', None)
 
-    pd.set_option('display.float_format', '{:,.0f}'.format)
-    print(top_flips[["product_id", "buy_price", "sell_price", "margin", "hourly_vol", "projected_pph"]])
+    # print(top_flips[["product_id", "buy_price", "sell_price", "margin", "hourly_vol", "projected_pph"]])
 
     return top_flips
 
-data = get_recent_data()
-get_top_flips(calculate_market_velocity(data), data)
+# data = get_recent_data()
+# get_top_flips(calculate_market_velocity(data), data)
+
+
 
 #calculate sharpe ratios for each flip using all data/data over last 12h(or all data if less than 12)
 #calculate sharpes for all items, stability in margins
@@ -119,6 +117,76 @@ get_top_flips(calculate_market_velocity(data), data)
 #decide how to determine best flips, as sharpes and pph are different metrics relative, and cannot be compared directly.
 #method 1: find top 10% of sharpes and return top flips from that list
 #method 2: return highest sharpe * pph values, rebalanced to some metric.
+
+
+def margin_sharpe(recent): #needs full df(12+ hour)
+    tax_rate = 0.98875
+
+    recent['net_margin'] = (recent['buy_price'] * tax_rate) - recent['sell_price']
+
+    stats = recent.groupby('product_id')['net_margin'].agg(['mean', 'std'])
+    stats['margin_sharpe'] = stats['mean'] / (stats['std'] + 1e-9)
+
+    return stats[['margin_sharpe', 'mean', 'std']]
+
+
+def merged_data(window_hours=12):
+    full_df = get_all_data()
+    recent_df = get_recent_data(window_hours * 60)
+
+    top_flips = get_top_flips(calculate_market_velocity(recent_df), recent_df, 1836)
+    sharpe_data = margin_sharpe(full_df)
+    merged = top_flips.join(sharpe_data, on='product_id')
+
+    return merged
+
+def risk_adjusted_pph_log(df): #takes merged data
+    df['logged_sharpes'] = np.log1p(df['margin_sharpe'])
+    df['risk_adjusted_pph'] = df['projected_pph'] * df['logged_sharpes']
+
+    pd.set_option('display.max_columns', None)
+
+    # df = df[df['product_id'] = ""]
+    print(df[['product_id', 'buy_price', 'sell_price', 'margin', 'mean', 'std', 'hourly_vol', 'projected_pph', 'margin_sharpe', 'logged_sharpes', 'risk_adjusted_pph']].sort_values(by='projected_pph', ascending=False))
+
+
+    print("\n Data Frame Columns: \n", df.columns)
+
+    return df
+
+
+
+def filtering(df, cap):
+    '''
+    Because skyblock is incredibly diverse, sharp ratios change drastically and some stuff r stale in comparison
+    1. increase min volume threshold, 100
+    2. effective_std = max(real_std, mean_price * 0.01), items not moving are prob not good to buy
+    3. Cap sharpe ratios above 5 as they are basically the same.
+    4. Normalize 0 - 1
+    '''
+    df['margin_sharpe'] = df['margin_sharpe'].clip(upper=cap)
+    df['logged_pph'] = np.log1p(df['projected_pph'])
+
+    s_min, s_max = df['margin_sharpe'].min(), df['margin_sharpe'].max()
+    p_min, p_max = df['logged_pph'].min(), df['logged_pph'].max()
+
+    df['norm_sharpe'] = (df['margin_sharpe'] - s_min) / (s_max - s_min)
+    df['norm_pph'] = (df['logged_pph'] - p_min) / (p_max - p_min)
+
+    df['alpha_score'] = (df['norm_pph'] * 0.7) + (df['norm_sharpe'] * 0.3)
+
+    print(df[['product_id', 'buy_price', 'sell_price', 'margin',
+              'mean', 'std', 'hourly_vol', 'projected_pph',
+              'margin_sharpe', 'norm_sharpe', 'norm_pph',
+              'alpha_score']].sort_values(by='buy_price', ascending=False))
+
+
+    return df.sort_values('alpha_score', ascending=False)
+
+risk_adjusted_pph_log(merged_data())
+filtering(merged_data(), 5)
+
+
 
 
 
