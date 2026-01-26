@@ -1,9 +1,13 @@
+import os
 import sqlite3
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "..", "data", "bazaar.db")
 
 class DatabaseManager:
-    def __init__(self, db_path="../data/bazaar.db"):
+    def __init__(self, db_path=DB_PATH):
         self.db_path = db_path
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         self.con = sqlite3.connect(self.db_path)
         self.cur = self.con.cursor()
         self._setup_table()

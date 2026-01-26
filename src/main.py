@@ -1,4 +1,5 @@
 import time
+
 from data_fetcher import fetch_data  # Your existing fetcher
 from database import DatabaseManager
 

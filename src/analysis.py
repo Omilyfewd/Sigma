@@ -1,8 +1,7 @@
-import pandas as pd
 import numpy as np
-from matplotlib import pyplot as plt
+import pandas as pd
 
-from data_eda import get_all_data, get_recent_data, get_product_data
+from data_eda import get_all_data, get_recent_data
 
 
 def calculate_rolling_sharpe(df, window=30):
@@ -47,7 +46,6 @@ def profit_per_hour(df, window=60):
     profit = trades_per_hour(df, window) * margin
     return profit
 
-print(profit_per_hour(get_product_data("RECOMBOBULATOR_3000")))
 
 def volume_derivative(df):
     # df = df.sort_values(['product_id', 'timestamp'])
@@ -79,9 +77,6 @@ def calculate_market_velocity(df, window_minutes=60) -> pd.DataFrame:
 
     return velocity
 
-# calculate_market_velocity(get_all_data())
-
-
 def get_top_flips(velo_df, df, top_n=10):
     latest_prices = df.drop_duplicates('product_id', keep='last')
     latest_prices = latest_prices[['product_id', 'buy_price', 'sell_price']]
@@ -102,14 +97,7 @@ def get_top_flips(velo_df, df, top_n=10):
     pd.set_option('display.float_format', '{:,.6f}'.format)
     pd.set_option('display.max_columns', None)
 
-    # print(top_flips[["product_id", "buy_price", "sell_price", "margin", "hourly_vol", "projected_pph"]])
-
     return top_flips
-
-# data = get_recent_data()
-# get_top_flips(calculate_market_velocity(data), data)
-
-
 
 #calculate sharpe ratios for each flip using all data/data over last 12h(or all data if less than 12)
 #calculate sharpes for all items, stability in margins
@@ -117,7 +105,6 @@ def get_top_flips(velo_df, df, top_n=10):
 #decide how to determine best flips, as sharpes and pph are different metrics relative, and cannot be compared directly.
 #method 1: find top 10% of sharpes and return top flips from that list
 #method 2: return highest sharpe * pph values, rebalanced to some metric.
-
 
 def margin_sharpe(recent): #needs full df(12+ hour)
     tax_rate = 0.9875
@@ -128,7 +115,6 @@ def margin_sharpe(recent): #needs full df(12+ hour)
     stats['margin_sharpe'] = stats['mean'] / (stats['std'] + 1e-9)
 
     return stats[['margin_sharpe', 'mean', 'std']]
-
 
 def merged_data(window_hours=12):
     full_df = get_all_data()
@@ -147,14 +133,7 @@ def risk_adjusted_pph_log(df): #takes merged data
     pd.set_option('display.max_columns', None)
 
     df = df[df['product_id'] == "RECOMBOBULATOR_3000"]
-    print(df[['product_id', 'buy_price', 'sell_price', 'margin', 'mean', 'std', 'hourly_vol', 'projected_pph', 'margin_sharpe', 'logged_sharpes', 'risk_adjusted_pph']].sort_values(by='projected_pph', ascending=False))
-
-
-    print("\n Data Frame Columns: \n", df.columns)
-
     return df
-
-
 
 def filtering(df, cap):
     '''
@@ -175,62 +154,10 @@ def filtering(df, cap):
 
     df['alpha_score'] = (df['norm_pph'] * 0.7) + (df['norm_sharpe'] * 0.3)
 
-    print(df[['product_id', 'buy_price', 'sell_price', 'margin',
-              'mean', 'std', 'hourly_vol', 'projected_pph',
-              'margin_sharpe', 'norm_sharpe', 'norm_pph',
-              'alpha_score']].sort_values(by='buy_price', ascending=False))
+    # print(df[['product_id', 'buy_price', 'sell_price', 'margin',
+    #           'mean', 'std', 'hourly_vol', 'projected_pph',
+    #           'margin_sharpe', 'norm_sharpe', 'norm_pph',
+    #           'alpha_score']].sort_values(by='buy_price', ascending=False))
 
 
     return df.sort_values('alpha_score', ascending=False)
-
-risk_adjusted_pph_log(merged_data())
-# filtering(merged_data(), 5)
-
-
-
-
-
-
-
-
-
-
-
-# def top_flips():
-#     df = get_all_data()
-#     tax_rate = 0.98875
-#
-#     latest = df.sort_values('timestamp').groupby('product_id').tail(1).copy()
-#     latest['profit_per_unit'] = (latest['buy_price'] * tax_rate) - latest['sell_price']
-#
-#     latest['profit_per_hour'] = latest['profit_per_unit'] * trades_per_hour(latest['product_id'])
-#
-#     filtered = latest[latest['profit_per_unit'] > 0]
-#     top_10 = filtered.sort_values(by='profit_per_hour', ascending=False).head(10)
-#
-#     return top_10
-
-# def top_flips():
-#     df = get_all_data()
-#
-#     latest = df.sort_values('timestamp').groupby('product_id').tail(1).copy()
-#
-#     velocities = get_market_velocity(window_minutes=60)
-#     df = latest.join(velocities, on='product_id')
-#
-#     tax_rate = 0.98875
-#     df['profit_per_unit'] = (df['buy_price'] * tax_rate) - df['sell_price']
-#
-#     df['potential_profit_hr'] = df['profit_per_unit'] * df['hourly_velocity']
-#
-#     filtered = df[
-#         (df['profit_per_unit'] > 0) &
-#         (df['hourly_velocity'] > 10)
-#         ]
-#
-#     return filtered.sort_values(by='potential_profit_hr', ascending=False).head(10)
-
-# top_flips()
-
-
-

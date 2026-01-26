@@ -1,8 +1,14 @@
+import os
 import sqlite3
+
 import pandas as pd
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "..", "data", "bazaar.db")
+
 def get_product_data(product_id):
-    con = sqlite3.connect('../data/bazaar.db')
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    con = sqlite3.connect(DB_PATH)
     query = "SELECT * FROM bazaar_updates_2 WHERE product_id = ? ORDER BY timestamp ASC"
 
     try:
@@ -10,12 +16,11 @@ def get_product_data(product_id):
     finally:
         con.close()
 
-    # df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-    # df.set_index('timestamp', inplace=True, drop=False)
     return df
 
 def get_all_data():
-    con = sqlite3.connect('../data/bazaar.db')
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    con = sqlite3.connect(DB_PATH)
     query = "SELECT * FROM bazaar_updates_2 ORDER BY timestamp ASC"
 
     try:
@@ -23,13 +28,12 @@ def get_all_data():
     finally:
         con.close()
 
-    # df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-    # df.set_index('timestamp', inplace=True, drop=False)
     return df
 
 
 def get_recent_data(window_minutes=60):
-    con = sqlite3.connect('../data/bazaar.db')
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    con = sqlite3.connect(DB_PATH)
 
     buffer_minutes = 5
     ms_to_look_back = (window_minutes + buffer_minutes) * 60 * 1000
@@ -58,10 +62,3 @@ def get_info(df, window=0):
     print(type(summary))
     print(summary)
     return summary
-
-
-# get_info(get_product_data("ENCHANTED_GOLD"))
-# pd.set_option('display.max_rows', None)
-# pd.set_option('display.max_columns', None)
-# print(get_product_data("BOOSTER_COOKIE")[['buy_price', 'sell_price', 'buy_moving_week', 'sell_moving_week']])
-

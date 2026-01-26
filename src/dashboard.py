@@ -1,8 +1,9 @@
-import streamlit as st
 import pandas as pd
+import plotly.graph_objects as go
+import streamlit as st
+
 from analysis import merged_data, filtering
 from data_eda import get_recent_data
-import plotly.graph_objects as go
 
 st.set_page_config(page_title="Lawrence Shi's very skibidi sigma bazaar tool", layout="wide")
 st.title("📈 Quantitative Trading and Market Analysis Tool")
