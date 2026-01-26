@@ -75,3 +75,8 @@ Lawrence's Tip: For optimal results, allow main.py to run for at least 10–15 m
 
 ### Get To Flipping💰!!!
 Log onto Skyblock, reference the webpage, and start placing your buy/sell orders!
+
+## Demo
+![Sigma Dashboard Demo](assets/Main_Page.png)
+![Sigma Details Demo](assets/Item_Details.png)
+![Sigma Bazaar Order](assets/Skyblock_bazaar.png)
